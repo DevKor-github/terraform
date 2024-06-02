@@ -162,7 +162,7 @@ resource "github_organization_ruleset" "review_ruleset" {
 resource "github_repository_webhook" "discord_pr_webhook" {
   for_each = { for repo in local.repos : repo.name => repo }
 
-  repository = each.value
+  repository = each.value.name
 
   configuration {
     url          = var.discord_webhook_url
