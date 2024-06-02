@@ -2,8 +2,9 @@
 
 ## U must provide tfvars
 
-```js
-github_token = "YOUR_GITHUB_TOKEN";
+```tf
+github_token = "YOUR_GITHUB_TOKEN"
+discord_webhook_url = "YOUR_DISCORD_WEBHOOK_URL"
 ```
 
 ## infra rules
