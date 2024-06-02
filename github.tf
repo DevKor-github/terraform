@@ -38,7 +38,7 @@ data "local_file" "repo_permissions" {
 }
 
 locals {
-    users = jsondecode(data.local_file.users.content)
+  users = jsondecode(data.local_file.users.content)
   teams = jsondecode(data.local_file.teams.content)
   repos = jsondecode(data.local_file.repos.content)
   repo_permissions = jsondecode(data.local_file.repo_permissions.content)
