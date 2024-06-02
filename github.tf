@@ -25,32 +25,26 @@ data "local_file" "users" {
   filename = "${path.module}/users.json"
 }
 
-locals {
-  users = jsondecode(data.local_file.users.content)
-}
-
 data "local_file" "teams" {
   filename = "${path.module}/teams.json"
 }
 
-locals {
-  teams = jsondecode(data.local_file.teams.content)
-}
 data "local_file" "repos" {
   filename = "${path.module}/repos.json"
 }
 
-locals {
-  repos = jsondecode(data.local_file.repos.content)
-}
 data "local_file" "repo_permissions" {
   filename = "${path.module}/repo_permissions.json"
 }
 
 locals {
+    users = jsondecode(data.local_file.users.content)
+  teams = jsondecode(data.local_file.teams.content)
+  repos = jsondecode(data.local_file.repos.content)
   repo_permissions = jsondecode(data.local_file.repo_permissions.content)
 }
 
+  
 
 resource "github_organization_settings" "org_settings" {
   billing_email = "devkor.apply@gmail.com"
@@ -130,20 +124,32 @@ resource "github_team_repository" "team_repos" {
 }
 
 
-# main branch must have Reviews
-resource "github_organization_ruleset" "review_ruleset" {
-  name   = "restrict-repo-deletion"
-  target = "branch"
+resource "github_branch" "main" {
+  for_each = { for repo in local.repos : repo.name => repo }
 
+  repository = each.value.name
+  branch     = "main"
+}
+
+resource "github_branch_default" "default"{
+  for_each = { for repo in local.repos : repo.name => repo }
+
+  repository = each.value.name
+  branch     = "main"
+}
+
+# main branch must have Reviews
+resource "github_repository_ruleset" "review_ruleset" {
+  name   = "require_reviews"
+  target = "branch"
+  for_each = { for repo in local.repos : repo.name => repo }
+
+  repository = each.value.name
   enforcement = "active"
 
   conditions {
     ref_name {
-      include = [ "main", "deploy" ]
-      exclude = []
-    }
-    repository_name {
-      include = ["~ALL"]
+      include = [ "~DEFAULT_BRANCH"]
       exclude = []
     }
   }
