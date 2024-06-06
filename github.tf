@@ -30,32 +30,32 @@ data "local_file" "repo_permissions" {
 }
 
 locals {
-  users = jsondecode(data.local_file.users.content)
-  teams = jsondecode(data.local_file.teams.content)
-  repos = jsondecode(data.local_file.repos.content)
+  users            = jsondecode(data.local_file.users.content)
+  teams            = jsondecode(data.local_file.teams.content)
+  repos            = jsondecode(data.local_file.repos.content)
   repo_permissions = jsondecode(data.local_file.repo_permissions.content)
 }
 
-  
+
 
 resource "github_organization_settings" "org_settings" {
-  billing_email = "devkor.apply@gmail.com"
-  company = "DevKor"
-  blog = "https://devkor.club"
-  email = "devkor.apply@gmail.com"
-  location = "Seoul, Korea"
-  name = "DevKor"
-  description = "고려대학교 SW 프로덕트 학회 DevKor Github Organization"
-  has_organization_projects = true
-  has_repository_projects = true
-  members_can_create_repositories = false
+  billing_email                    = "devkor.apply@gmail.com"
+  company                          = "DevKor"
+  blog                             = "https://devkor.club"
+  email                            = "devkor.apply@gmail.com"
+  location                         = "Seoul, Korea"
+  name                             = "DevKor"
+  description                      = "고려대학교 SW 프로덕트 학회 DevKor Github Organization"
+  has_organization_projects        = true
+  has_repository_projects          = true
+  members_can_create_repositories  = false
   members_can_create_private_pages = false
 
-  advanced_security_enabled_for_new_repositories = true
-  dependabot_alerts_enabled_for_new_repositories = true
-  dependabot_security_updates_enabled_for_new_repositories = true
-  dependency_graph_enabled_for_new_repositories = true
-  secret_scanning_enabled_for_new_repositories = true
+  advanced_security_enabled_for_new_repositories               = true
+  dependabot_alerts_enabled_for_new_repositories               = true
+  dependabot_security_updates_enabled_for_new_repositories     = true
+  dependency_graph_enabled_for_new_repositories                = true
+  secret_scanning_enabled_for_new_repositories                 = true
   secret_scanning_push_protection_enabled_for_new_repositories = true
 }
 
@@ -82,24 +82,24 @@ resource "github_repository" "repo" {
   for_each = { for repo in local.repos : repo.name => repo }
 
 
-  name        = each.key
-  description = "DevKor ${each.key} repository"
-  visibility = "public"
-  has_projects = true
-  has_wiki = true
-  has_downloads = true
-  has_issues = true
+  name            = each.key
+  description     = "DevKor ${each.key} repository"
+  visibility      = "public"
+  has_projects    = true
+  has_wiki        = true
+  has_downloads   = true
+  has_issues      = true
   has_discussions = true
 
-  topics = ["devkor"]
+  topics           = ["devkor"]
   license_template = "MIT"
 
-  archive_on_destroy = true
+  archive_on_destroy   = true
   vulnerability_alerts = true
 
   security_and_analysis {
     secret_scanning {
-      status =  "enabled"
+      status = "enabled"
     }
     secret_scanning_push_protection {
       status = "enabled"
@@ -109,7 +109,7 @@ resource "github_repository" "repo" {
 }
 # team - repo permission
 resource "github_team_repository" "team_repos" {
-  for_each = { for permission in local.repo_permissions : "${permission.team}:${permission.repo}" => permission }
+  for_each   = { for permission in local.repo_permissions : "${permission.team}:${permission.repo}" => permission }
   team_id    = github_team.team[each.value.team].id
   repository = each.value.repo
   permission = each.value.permission
@@ -123,7 +123,7 @@ resource "github_branch" "main" {
   branch     = "main"
 }
 
-resource "github_branch_default" "default"{
+resource "github_branch_default" "default" {
   for_each = { for repo in local.repos : repo.name => repo }
 
   repository = each.value.name
@@ -132,16 +132,16 @@ resource "github_branch_default" "default"{
 
 # main branch must have Reviews
 resource "github_repository_ruleset" "review_ruleset" {
-  name   = "require_reviews"
-  target = "branch"
+  name     = "require_reviews"
+  target   = "branch"
   for_each = { for repo in local.repos : repo.name => repo }
 
-  repository = each.value.name
+  repository  = each.value.name
   enforcement = "active"
 
   conditions {
     ref_name {
-      include = [ "~DEFAULT_BRANCH"]
+      include = ["~DEFAULT_BRANCH"]
       exclude = []
     }
   }
@@ -149,7 +149,7 @@ resource "github_repository_ruleset" "review_ruleset" {
   rules {
     pull_request {
       required_approving_review_count = 1
-      require_last_push_approval = true
+      require_last_push_approval      = true
     }
 
   }
