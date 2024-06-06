@@ -10,31 +10,12 @@ variable "discord_webhook_url" {
   sensitive   = true
 }
 
-variable "users" {
-  type = list(object({
-    user = string
-    role = string
-    team = string
-  }))
-}
-
 variable "teams" {
   type = list(object({
-    name = string
-  }))
-}
-
-variable "repos" {
-  type = list(object({
-    name = string
-  }))
-}
-
-variable "repo_permissions" {
-  type = list(object({
-    repo       = string
-    team       = string
-    permission = string
+    name                = string
+    users               = list(string)
+    repos               = list(string)
+    discord_webhook_url = string
   }))
 }
 

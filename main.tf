@@ -13,25 +13,40 @@ provider "github" {
   owner = "DevKor-github"
 }
 
-resource "github_membership" "user" {
-  for_each = { for user in var.users : user.user => user }
-
-  username = each.value.user
-  role     = each.value.role
+locals {
+  members = setsubtract(flatten(var.teams[*].users), var.admins)
+  repos   = flatten(var.teams[*].repos)
+  repo_team_mapping = flatten(
+    [
+      for team in var.teams :
+      [for repo in team.repos : { key : repo, value : team.name }]
+    ]
+  )
+  repo_discord_webhook_url_mapping = flatten(
+    [
+      for team in var.teams :
+      [for repo in team.repos : { key : "${team.name}_${repo}", value : { repo : repo, webhook : team.discord_webhook_url } }]
+    ]
+  )
 }
 
-# team 생성
-resource "github_team" "team" {
-  for_each = { for team in var.teams : team.name => team }
+resource "github_membership" "members" {
+  for_each = { for member in local.members : member => {} }
+
+  username = each.key
+  role     = "member"
+}
+
+resource "github_team" "teams" {
+  for_each = { for team in var.teams : team.name => {} }
 
   name        = each.key
   description = "DevKor ${each.key} team"
   privacy     = "closed"
 }
 
-# 팀별 2 repositories 생성
 resource "github_repository" "repo" {
-  for_each = { for repo in var.repos : repo.name => repo }
+  for_each = { for repo in local.repos : repo => {} }
 
 
   name            = each.key
@@ -61,34 +76,35 @@ resource "github_repository" "repo" {
 }
 # team - repo permission
 resource "github_team_repository" "team_repos" {
-  for_each   = { for permission in var.repo_permissions : "${permission.team}:${permission.repo}" => permission }
-  team_id    = github_team.team[each.value.team].id
-  repository = each.value.repo
-  permission = each.value.permission
+  for_each   = { for mapping in local.repo_team_mapping : mapping.key => mapping.value }
+  team_id    = github_team.teams[each.value].id
+  repository = github_repository.repo[each.key].name
+  permission = "admin"
 }
 
 
 resource "github_branch" "main" {
-  for_each = { for repo in var.repos : repo.name => repo }
+  for_each = { for repo in local.repos : repo => {} }
 
-  repository = each.value.name
+  repository = github_repository.repo[each.key].name
   branch     = "main"
 }
 
 resource "github_branch_default" "default" {
-  for_each = { for repo in var.repos : repo.name => repo }
+  for_each = { for repo in local.repos : repo => {} }
 
-  repository = each.value.name
+  repository = github_repository.repo[each.key].name
   branch     = "main"
 }
 
 # main branch must have Reviews
 resource "github_repository_ruleset" "review_ruleset" {
-  name     = "require_reviews"
-  target   = "branch"
-  for_each = { for repo in var.repos : repo.name => repo }
+  for_each = { for repo in local.repos : repo => {} }
 
-  repository  = each.value.name
+  name   = "require_reviews"
+  target = "branch"
+
+  repository  = github_repository.repo[each.key].name
   enforcement = "active"
 
   conditions {
@@ -110,12 +126,12 @@ resource "github_repository_ruleset" "review_ruleset" {
 
 # PR -> discord webhook
 resource "github_repository_webhook" "discord_pr_webhook" {
-  for_each = { for repo in var.repos : repo.name => repo }
+  for_each = { for mapping in local.repo_discord_webhook_url_mapping : mapping.key => mapping.value }
 
-  repository = each.value.name
+  repository = github_repository.repo[each.value.repo].name
 
   configuration {
-    url          = var.discord_webhook_url
+    url          = each.value.webhook
     content_type = "json"
     insecure_ssl = false
   }
