@@ -13,30 +13,6 @@ provider "github" {
   owner = "DevKor-github"
 }
 
-data "local_file" "users" {
-  filename = "${path.module}/users.json"
-}
-
-data "local_file" "teams" {
-  filename = "${path.module}/teams.json"
-}
-
-data "local_file" "repos" {
-  filename = "${path.module}/repos.json"
-}
-
-data "local_file" "repo_permissions" {
-  filename = "${path.module}/repo_permissions.json"
-}
-
-locals {
-  users            = jsondecode(data.local_file.users.content)
-  teams            = jsondecode(data.local_file.teams.content)
-  repos            = jsondecode(data.local_file.repos.content)
-  repo_permissions = jsondecode(data.local_file.repo_permissions.content)
-}
-
-
 
 resource "github_organization_settings" "org_settings" {
   billing_email                    = "devkor.apply@gmail.com"
@@ -62,7 +38,7 @@ resource "github_organization_settings" "org_settings" {
 
 # user 초대
 resource "github_membership" "user" {
-  for_each = { for user in local.users : user.user => user }
+  for_each = { for user in var.users : user.user => user }
 
   username = each.value.user
   role     = each.value.role
@@ -70,7 +46,7 @@ resource "github_membership" "user" {
 
 # team 생성
 resource "github_team" "team" {
-  for_each = { for team in local.teams : team.name => team }
+  for_each = { for team in var.teams : team.name => team }
 
   name        = each.key
   description = "DevKor ${each.key} team"
@@ -79,7 +55,7 @@ resource "github_team" "team" {
 
 # 팀별 2 repositories 생성
 resource "github_repository" "repo" {
-  for_each = { for repo in local.repos : repo.name => repo }
+  for_each = { for repo in var.repos : repo.name => repo }
 
 
   name            = each.key
@@ -109,7 +85,7 @@ resource "github_repository" "repo" {
 }
 # team - repo permission
 resource "github_team_repository" "team_repos" {
-  for_each   = { for permission in local.repo_permissions : "${permission.team}:${permission.repo}" => permission }
+  for_each   = { for permission in var.repo_permissions : "${permission.team}:${permission.repo}" => permission }
   team_id    = github_team.team[each.value.team].id
   repository = each.value.repo
   permission = each.value.permission
@@ -117,14 +93,14 @@ resource "github_team_repository" "team_repos" {
 
 
 resource "github_branch" "main" {
-  for_each = { for repo in local.repos : repo.name => repo }
+  for_each = { for repo in var.repos : repo.name => repo }
 
   repository = each.value.name
   branch     = "main"
 }
 
 resource "github_branch_default" "default" {
-  for_each = { for repo in local.repos : repo.name => repo }
+  for_each = { for repo in var.repos : repo.name => repo }
 
   repository = each.value.name
   branch     = "main"
@@ -134,7 +110,7 @@ resource "github_branch_default" "default" {
 resource "github_repository_ruleset" "review_ruleset" {
   name     = "require_reviews"
   target   = "branch"
-  for_each = { for repo in local.repos : repo.name => repo }
+  for_each = { for repo in var.repos : repo.name => repo }
 
   repository  = each.value.name
   enforcement = "active"
@@ -158,7 +134,7 @@ resource "github_repository_ruleset" "review_ruleset" {
 
 # PR -> discord webhook
 resource "github_repository_webhook" "discord_pr_webhook" {
-  for_each = { for repo in local.repos : repo.name => repo }
+  for_each = { for repo in var.repos : repo.name => repo }
 
   repository = each.value.name
 
