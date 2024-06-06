@@ -37,3 +37,7 @@ variable "repo_permissions" {
     permission = string
   }))
 }
+
+variable "admins" {
+  type = list(string)
+}

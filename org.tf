@@ -19,9 +19,9 @@ resource "github_organization_settings" "org_settings" {
   secret_scanning_push_protection_enabled_for_new_repositories = true
 }
 
-resource "github_membership" "user" {
-  for_each = { for user in var.users : user.user => user }
+resource "github_membership" "admins" {
+  for_each = { for admin in var.admins : admin => {} }
 
-  username = each.value.user
-  role     = each.value.role
+  username = each.key
+  role     = "admin"
 }

@@ -13,6 +13,13 @@ provider "github" {
   owner = "DevKor-github"
 }
 
+resource "github_membership" "user" {
+  for_each = { for user in var.users : user.user => user }
+
+  username = each.value.user
+  role     = each.value.role
+}
+
 # team 생성
 resource "github_team" "team" {
   for_each = { for team in var.teams : team.name => team }

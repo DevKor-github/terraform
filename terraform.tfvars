@@ -38,3 +38,7 @@ repo_permissions = [
     permission = "admin"
   }
 ]
+
+admins = [
+  "overthestream",
+]
