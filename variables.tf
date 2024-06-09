@@ -4,12 +4,6 @@ variable "github_token" {
   sensitive   = true
 }
 
-variable "discord_webhook_url" {
-  description = "The Discord webhook URL to send notifications"
-  type        = string
-  sensitive   = true
-}
-
 variable "teams" {
   type = list(object({
     name                = string
